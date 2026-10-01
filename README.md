@@ -25,8 +25,22 @@ proposal, which adds the ability to produce deeply frozen objects using
 `JSON.parse(text, { freeze: true })`. Import attributes provide an obvious way
 to make this available to both statically and dynamically imported JSON modules.
 
-> TODO: List use cases and manual freeze problems, can cite `JSON.parse` Options
-> proposal
+Frozen JSON modules are useful for data that is not meant to change, such as
+configuration, translations, test fixtures, or lookup tables.
+
+Freezing JSON modules manually has several drawbacks:
+
+- Either the first importer has to freeze a JSON module before anyone else sees
+  it, or a JavaScript wrapper module has to re-export a frozen copy and every
+  importer has to remember to use it.
+- Deep freezing requires a recursive helper that walks the whole object graph
+  after it has been created. As the JSON.parse Options proposal points out, a
+  native implementation can be faster, and static analysis can benefit from
+  knowing that the result is always deeply frozen.
+- Workarounds such as importing the module with `type: "text"`
+  ([Import Text](https://github.com/tc39/proposal-import-text), Stage 3) and
+  then passing it to `JSON.parse(text, { freeze: true })` are clunky and
+  inefficient compared to importing JSON directly.
 
 ## Proposal
 
@@ -161,6 +175,6 @@ the only syntax this proposal adds.
 - `HostGetSupportedImportAttributes` returns a flat list of keys, so a host that
   supports `freeze` accepts it on any import, not only on JSON modules. ECMA-262
   can't require `type: "json"` alongside `freeze` either, since hosts may
-  support JSON modules imported without it. Should hosts get a hook that sees
-  the whole module request, including its specifier, so they can reject
+  support JSON modules imported without `type`. Should hosts get a hook that
+  sees the whole module request, including its specifier, so they can reject
   attributes that don't apply to the requested module type?
