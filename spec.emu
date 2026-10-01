@@ -9,31 +9,252 @@ stage: 0
 contributors: Linus Groh
 </pre>
 
-<emu-clause id="sec-demo-clause">
-  <h1>This is an emu-clause</h1>
-  <p>This is an algorithm:</p>
-  <emu-alg>
-    1. Let _proposal_ be *undefined*.
-    1. If IsAccepted(_proposal_) is *true*, then
-      1. Let _stage_ be *0*<sub>ℤ</sub>.
-    1. Else,
-      1. Let _stage_ be *-1*<sub>ℤ</sub>.
-    1. Return ? ToString(_stage_).
-  </emu-alg>
+<emu-note type="editor">
+  <p>This proposal builds on top of the <a href="https://github.com/tc39/proposal-json-parseimmutable">JSON.parse Options</a> proposal, which introduces JSON Parse Options Records and adds an _options_ parameter to ParseJSON.</p>
+</emu-note>
+
+<emu-clause id="sec-ecmascript-language-expressions" number="13">
+  <h1>ECMAScript Language: Expressions</h1>
+
+  <emu-clause id="sec-left-hand-side-expressions" number="3">
+    <h1>Left-Hand-Side Expressions</h1>
+
+    <emu-clause id="sec-import-calls" number="10">
+      <h1>Import Calls</h1>
+
+      <emu-clause id="sec-evaluate-import-call" type="abstract operation" number="2">
+        <h1>
+          EvaluateImportCall (
+            _specifierExpr_: a Parse Node,
+            optional _optionsExpr_: a Parse Node,
+          ): either a normal completion containing a Promise or an abrupt completion
+        </h1>
+        <dl class="header">
+        </dl>
+        <emu-alg>
+          1. Let _referrer_ be GetActiveScriptOrModule().
+          1. If _referrer_ is *null*, set _referrer_ to the current Realm Record.
+          1. Let _specifierRef_ be ? Evaluation of _specifierExpr_.
+          1. Let _specifier_ be ? GetValue(_specifierRef_).
+          1. If _optionsExpr_ is present, then
+            1. Let _optionsRef_ be ? Evaluation of _optionsExpr_.
+            1. Let _options_ be ? GetValue(_optionsRef_).
+          1. Else,
+            1. Let _options_ be *undefined*.
+          1. Let _promiseCapability_ be ! NewPromiseCapability(%Promise%).
+          1. Let _specifierString_ be Completion(ToString(_specifier_)).
+          1. IfAbruptRejectPromise(_specifierString_, _promiseCapability_).
+          1. Let _attrs_ be a new empty List.
+          1. If _options_ is not *undefined*, then
+            1. If _options_ is not an Object, then
+              1. Perform ! Call(_promiseCapability_.[[Reject]], *undefined*, « a newly created *TypeError* object »).
+              1. Return _promiseCapability_.[[Promise]].
+            1. Let _attrsObj_ be Completion(Get(_options_, *"with"*)).
+            1. IfAbruptRejectPromise(_attrsObj_, _promiseCapability_).
+            1. If _attrsObj_ is not *undefined*, then
+              1. If _attrsObj_ is not an Object, then
+                1. Perform ! Call(_promiseCapability_.[[Reject]], *undefined*, « a newly created *TypeError* object »).
+                1. Return _promiseCapability_.[[Promise]].
+              1. Let _entries_ be Completion(EnumerableOwnProperties(_attrsObj_, ~key+value~)).
+              1. IfAbruptRejectPromise(_entries_, _promiseCapability_).
+              1. For each element _entry_ of _entries_, do
+                1. Let _key_ be ! Get(_entry_, *"0"*).
+                1. Let _value_ be ! Get(_entry_, *"1"*).
+                1. If _key_ is a String, then
+                  1. If _value_ is <del>not a String</del><ins>neither a String nor a Boolean</ins>, then
+                    1. Perform ! Call(_promiseCapability_.[[Reject]], *undefined*, « a newly created *TypeError* object »).
+                    1. Return _promiseCapability_.[[Promise]].
+                  1. Append the ImportAttribute Record { [[Key]]: _key_, [[Value]]: _value_ } to _attrs_.
+            1. If AllImportAttributesSupported(_attrs_) is *false*, then
+              1. Perform ! Call(_promiseCapability_.[[Reject]], *undefined*, « a newly created *TypeError* object »).
+              1. Return _promiseCapability_.[[Promise]].
+            1. Sort _attrs_ according to the lexicographic order of their [[Key]] field, treating the value of each such field as a sequence of UTF-16 code unit values. NOTE: This sorting is observable only in that hosts are prohibited from changing behaviour based on the order in which attributes are enumerated.
+          1. Let _moduleRequest_ be a new ModuleRequest Record { [[Specifier]]: _specifierString_, [[Attributes]]: _attrs_ }.
+          1. Perform HostLoadImportedModule(_referrer_, _moduleRequest_, ~empty~, _promiseCapability_).
+          1. Return _promiseCapability_.[[Promise]].
+        </emu-alg>
+      </emu-clause>
+    </emu-clause>
+  </emu-clause>
 </emu-clause>
 
-<emu-clause id="sec-is-accepted" type="abstract operation">
-  <h1>
-      IsAccepted (
-        _proposal_: an ECMAScript language value
-      ): a Boolean
-  </h1>
-  <dl class="header">
-    <dt>description</dt>
-    <dd>Tells you if the proposal was accepted</dd>
-  </dl>
-  <emu-alg>
-    1. If _proposal_ is not a String, or is not accepted, return *false*.
-    1. Return *true*.
-  </emu-alg>
+<emu-clause id="sec-ecmascript-language-scripts-and-modules" number="16">
+  <h1>ECMAScript Language: Scripts and Modules</h1>
+
+  <emu-clause id="sec-modules" number="2">
+    <h1>Modules</h1>
+
+    <emu-clause id="sec-module-semantics" number="1">
+      <h1>Module Semantics</h1>
+
+      <emu-clause id="sec-modulerequest-record" number="3">
+        <h1>ModuleRequest Records</h1>
+        <p>An ImportAttribute Record consists of the following fields:</p>
+        <emu-table id="table-importattribute-fields" caption="ImportAttribute Record Fields">
+          <table>
+            <thead>
+              <tr>
+                <th>Field Name</th>
+                <th>Value Type</th>
+                <th>Meaning</th>
+              </tr>
+            </thead>
+            <tr>
+              <td>[[Key]]</td>
+              <td>a String</td>
+              <td>The attribute key</td>
+            </tr>
+            <tr>
+              <td>[[Value]]</td>
+              <td>a String<ins> or a Boolean</ins></td>
+              <td>The attribute value</td>
+            </tr>
+          </table>
+        </emu-table>
+      </emu-clause>
+
+      <emu-clause id="sec-synthetic-module-records" number="8">
+        <h1>Synthetic Module Records</h1>
+
+        <emu-clause id="sec-parse-json-module" type="abstract operation" number="2">
+          <h1>
+            ParseJSONModule (
+              _source_: a String,
+              <ins>_attributes_: a List of ImportAttribute Records,</ins>
+            ): either a normal completion containing a Synthetic Module Record, or a throw completion
+          </h1>
+          <dl class="header">
+          </dl>
+          <emu-alg>
+            1. <ins>Let _options_ be ? CreateJSONParseOptionsFromImportAttributes(_attributes_).</ins>
+            1. Let _parseResult_ be ? ParseJSON(_source_<ins>, _options_</ins>).
+            1. Return CreateDefaultExportSyntheticModule(_parseResult_.[[Value]]).
+          </emu-alg>
+        </emu-clause>
+
+        <emu-clause id="sec-createjsonparseoptionsfromimportattributes" type="abstract operation">
+          <h1>
+            <ins>
+              CreateJSONParseOptionsFromImportAttributes (
+                _attributes_: a List of ImportAttribute Records,
+              ): either a normal completion containing a JSON Parse Options Record or a throw completion
+            </ins>
+          </h1>
+          <dl class="header">
+          </dl>
+          <emu-alg>
+            1. Let _freeze_ be *false*.
+            1. For each ImportAttribute Record _attr_ of _attributes_, do
+              1. If _attr_.[[Key]] is *"freeze"*, then
+                1. If _attr_.[[Value]] is not a Boolean, throw a *TypeError* exception.
+                1. Set _freeze_ to _attr_.[[Value]].
+            1. Return the JSON Parse Options Record { [[Freeze]]: _freeze_, [[PreferNullPrototype]]: _freeze_ }.
+          </emu-alg>
+        </emu-clause>
+      </emu-clause>
+
+      <emu-clause id="sec-HostLoadImportedModule" type="host-defined abstract operation" number="10">
+        <h1>
+          HostLoadImportedModule (
+            _referrer_: a Script Record, a Cyclic Module Record, or a Realm Record,
+            _moduleRequest_: a ModuleRequest Record,
+            _hostDefined_: anything,
+            _payload_: a GraphLoadingState Record or a PromiseCapability Record,
+          ): ~unused~
+        </h1>
+        <dl class="header">
+        </dl>
+        <p>An implementation of HostLoadImportedModule must conform to the following requirements:</p>
+        <ul>
+          <li>The host environment must perform FinishLoadingImportedModule(_referrer_, _moduleRequest_, _payload_, _result_), where _result_ is either a normal completion containing the loaded Module Record or a throw completion, either synchronously or asynchronously.</li>
+          <li>
+            <p>If this operation is called multiple times with two (_referrer_, _moduleRequest_) pairs such that:</p>
+            <ul>
+              <li>the first _referrer_ is the same as the second _referrer_;</li>
+              <li>ModuleRequestsEqual(the first _moduleRequest_, the second _moduleRequest_) is *true*;</li>
+            </ul>
+            <p>and it performs FinishLoadingImportedModule(_referrer_, _moduleRequest_, _payload_, _result_) where _result_ is a normal completion, then it must perform FinishLoadingImportedModule(_referrer_, _moduleRequest_, _payload_, _result_) with the same _result_ each time.</p>
+          </li>
+          <li>If _moduleRequest_.[[Attributes]] has an entry _entry_ such that _entry_.[[Key]] is *"type"* and _entry_.[[Value]] is *"json"*, when the host environment performs FinishLoadingImportedModule(_referrer_, _moduleRequest_, _payload_, _result_), _result_ must either be the Completion Record returned by an invocation of ParseJSONModule<ins> whose _attributes_ argument is _moduleRequest_.[[Attributes]]</ins> or a throw completion.</li>
+          <li>The operation must treat _payload_ as an opaque value to be passed through to FinishLoadingImportedModule.</li>
+        </ul>
+      </emu-clause>
+    </emu-clause>
+    <emu-clause id="sec-imports" number="2">
+      <h1>Imports</h1>
+      <h2>Syntax</h2>
+      <emu-grammar type="definition">
+        WithEntries :
+          AttributeKey `:` <del>StringLiteral</del><ins>AttributeValue</ins>
+          AttributeKey `:` <del>StringLiteral</del><ins>AttributeValue</ins> `,` WithEntries
+      </emu-grammar>
+      <ins class="block">
+        <emu-grammar type="definition">
+          AttributeValue :
+            StringLiteral
+            BooleanLiteral
+        </emu-grammar>
+      </ins>
+
+      <emu-clause id="sec-withclausetoattributes" type="sdo" number="4">
+        <h1>Static Semantics: WithClauseToAttributes ( ): a List of ImportAttribute Records</h1>
+        <dl class="header">
+        </dl>
+        <emu-grammar>WithEntries : AttributeKey `:` <del>StringLiteral</del><ins>AttributeValue</ins></emu-grammar>
+        <emu-alg>
+          1. Let _key_ be the PropName of |AttributeKey|.
+          1. Let _entry_ be the ImportAttribute Record { [[Key]]: _key_, [[Value]]: <del>the SV of |StringLiteral|</del><ins>the ImportAttributeValue of |AttributeValue|</ins> }.
+          1. Return « _entry_ ».
+        </emu-alg>
+        <emu-grammar>WithEntries : AttributeKey `:` <del>StringLiteral</del><ins>AttributeValue</ins> `,` WithEntries</emu-grammar>
+        <emu-alg>
+          1. Let _key_ be the PropName of |AttributeKey|.
+          1. Let _entry_ be the ImportAttribute Record { [[Key]]: _key_, [[Value]]: <del>the SV of |StringLiteral|</del><ins>the ImportAttributeValue of |AttributeValue|</ins> }.
+          1. Let _rest_ be WithClauseToAttributes of |WithEntries|.
+          1. Return the list-concatenation of « _entry_ » and _rest_.
+        </emu-alg>
+      </emu-clause>
+
+      <emu-clause id="sec-importattributevalue" type="sdo">
+        <h1><ins>Static Semantics: ImportAttributeValue ( ): a String or a Boolean</ins></h1>
+        <dl class="header">
+        </dl>
+        <emu-grammar>AttributeValue : StringLiteral</emu-grammar>
+        <emu-alg>
+          1. Return the SV of |StringLiteral|.
+        </emu-alg>
+        <emu-grammar>AttributeValue : BooleanLiteral</emu-grammar>
+        <emu-alg>
+          1. If |BooleanLiteral| is the token `false`, return *false*.
+          1. If |BooleanLiteral| is the token `true`, return *true*.
+        </emu-alg>
+      </emu-clause>
+    </emu-clause>
+  </emu-clause>
+</emu-clause>
+
+<emu-clause id="sec-structured-data" number="25">
+  <h1>Structured Data</h1>
+
+  <emu-clause id="sec-json-object" number="5">
+    <h1>The JSON Object</h1>
+
+    <emu-clause id="sec-json.parse" number="2">
+      <h1>JSON.parse ( _text_ [ , _reviverOrOptions_ ] )</h1>
+
+      <emu-clause id="sec-ParseJSON" type="abstract operation">
+        <h1>
+          ParseJSON (
+            _text_: a String,
+            _options_: a JSON Parse Options Record,
+          ): either a normal completion containing a JSON Parse Record, or a throw completion
+        </h1>
+        <dl class="header">
+        </dl>
+        <emu-note type="editor">
+          <p>This signature is defined by the <a href="https://github.com/tc39/proposal-json-parseimmutable">JSON.parse Options</a> proposal and is only repeated here for reference. This proposal does not change ParseJSON.</p>
+        </emu-note>
+      </emu-clause>
+    </emu-clause>
+  </emu-clause>
 </emu-clause>
