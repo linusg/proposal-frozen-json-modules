@@ -158,3 +158,9 @@ the only syntax this proposal adds.
   be a follow-up proposal for `with { type: "bytes", immutable: false }`? Or do
   we accept that JSON is mutable by default with a way to opt into freezing, and
   bytes immutable by default with no way of opting out?
+- `HostGetSupportedImportAttributes` returns a flat list of keys, so a host that
+  supports `freeze` accepts it on any import, not only on JSON modules. ECMA-262
+  can't require `type: "json"` alongside `freeze` either, since hosts may
+  support JSON modules imported without it. Should hosts get a hook that sees
+  the whole module request, including its specifier, so they can reject
+  attributes that don't apply to the requested module type?
