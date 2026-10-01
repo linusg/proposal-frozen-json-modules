@@ -151,7 +151,9 @@ the only syntax this proposal adds.
   `JSON.parse` it defaults to the value of `freeze`, so `freeze: true` already
   produces null-prototype objects, and a separate attribute would only be needed
   to opt out. Full parity with `JSON.parse` options isn't possible anyway, since
-  options like a reviver function can't be expressed as import attributes.
+  options like a reviver function can't be expressed as import attributes. This
+  highly depends on the outcome of
+  [tc39/proposal-json-parseimmutable#24](https://github.com/tc39/proposal-json-parseimmutable/issues/24).
 - With Import Bytes at Stage 2.7 it is too late to change it, but should there
   be a follow-up proposal for `with { type: "bytes", immutable: false }`? Or do
   we accept that JSON is mutable by default with a way to opt into freezing, and
